@@ -1,4 +1,5 @@
-#include <avr/sleep.h>
+#include "avr/sleep.h"
+#include "TimerOne.h"
 
 #define L1 1 //1
 #define L2 2 //2
@@ -20,6 +21,7 @@ int start = 0;
 int status = 0; //1 is a victory, 0 is a lose.
 int scores = 0;
 int time = 15000;
+int f;
 
 void setup() {
   // put your setup code here, to run once:
@@ -36,18 +38,8 @@ void setup() {
   pinMode(POT, INPUT);
   int target = number();
   //lcd.begin(16,2);
-  /*switch(pot level){
-      case 1: f=250;
-        break;
-      case 2: f=500;
-        break;
-      case 3: f=750;
-        break;
-      case 4: f=1000;
-        break;
-      default: f=250;
-        break;
-  }*/
+  Timer1.initialize(1000000);
+  Timer1.attachInterrupt(level);
 }
 
 void loop() {
@@ -66,7 +58,6 @@ void loop() {
       }
       start = 1
       sleep_disable();
-      // cont = 0; SE ENTRA IN SLEEPING MASSIMO UNA VOLTA NON SETTIAMO CONT A 0 ALTRIMENTI PUO' RIENTRARCI
     }
   }while(digitalRead(B1) == LOW || start == 0);
 
@@ -90,7 +81,7 @@ void message(){
   if(status){
     scores = scores +  100;
     //lcd.print("GOOOD! Score: "+ scores);
-    time = time - F;
+    time = time - f;
   }else{
     digitalWrite(LS, HIGH);
     delay(1000);
@@ -168,4 +159,28 @@ void initialstate(){
   delay(500);
   digitalWrite(LS, LOW);
   delaY(500);
+}
+
+void level(){
+  //SISTEMARE I CASE IN BASE A QUALI SONO I VALORI DEL POTENZIOMETRO, VEDERE STAMPA
+  //QUESTA COSA VA FATTA IN UN LOOP?
+  int pot_level = analogRead(POT);
+  int current;
+  if (pot_level != current){
+    current = pot_level;
+    int intensity = map(current, 0, 1023, 0, 255);
+    Serial.println(current);
+    switch(pot_level){
+      case 1: f=250;
+        break;
+      case 2: f=500;
+        break;
+      case 3: f=750;
+        break;
+      case 4: f=1000;
+        break;
+      default: f=250;
+        break;
+    }
+  }
 }
