@@ -1,3 +1,5 @@
+#include <avr/sleep.h>
+
 #define L1 1 //1
 #define L2 2 //2
 #define L3 3 //4
@@ -14,6 +16,7 @@ int pressed_1 = 0; //off
 int pressed_2 = 0; //off
 int pressed_4 = 0; //off
 int pressed_8 = 0; //off
+int start = 0;
 int status = 0; //1 is a victory, 0 is a lose.
 int scores = 0;
 int time = 15000;
@@ -21,7 +24,6 @@ int time = 15000;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  //definition of input or output variables 
   pinMode(L1, OUTPUT);
   pinMode(L2, OUTPUT);
   pinMode(L3, OUTPUT);
@@ -34,7 +36,6 @@ void setup() {
   pinMode(POT, INPUT);
   int target = number();
   //lcd.begin(16,2);
-  //lettura input dal pot qui o nel loop? penso qui
   /*switch(pot level){
       case 1: f=250;
         break;
@@ -52,15 +53,29 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   /*
-  //COME MANDIAMO IL SISTEMA IN SLEEPING?
-  while(digitalRead(B1) == LOW){
+  int cont = 0;
+  int t = 0;
+  do{
     initialState();
-    while(sleeping());
-  }
+    cont = cont + 1000;
+    if(cont<10000){ //INVECE DI CONT USIAMO UN TIMER DELLA LIBRERIA !!
+      while(digitalRead(B1) == LOW){
+        set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+        sleep_enable();
+        sleep_mode();
+      }
+      start = 1
+      sleep_disable();
+      // cont = 0; SE ENTRA IN SLEEPING MASSIMO UNA VOLTA NON SETTIAMO CONT A 0 ALTRIMENTI PUO' RIENTRARCI
+    }
+  }while(digitalRead(B1) == LOW || start == 0);
+
   //lcd.print("Go!");
   scores = 0;
   //lcd.print(target);
-  ledManagement();
+  while(t < times){ //INVECE DI T USIAMO UN TIMER DELLA LIBRERIA!
+    ledmanagement();
+  }
   if(sum() == targer){
     status = 1;
   }else{
@@ -83,10 +98,6 @@ void message(){
     //lcd.print("Game Over - Final Scores" + scores);
     delay(10000);
   }
-}
-
-bool sleeping(){
-  //
 }
 
 //function to randomically choose a number between 0 and 15
@@ -154,7 +165,7 @@ int sum(){
 void initialstate(){
   //lcd.print("Welcome to GMB! Press B1 to Start");
   digitalWrite(LS, HIGH);
-  delay(100);
+  delay(500);
   digitalWrite(LS, LOW);
-  delaY(100);
+  delaY(500);
 }
