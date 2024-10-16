@@ -1,5 +1,5 @@
-#include "avr/sleep.h"
-#include "TimerOne.h"
+#include <avr/sleep.h>
+#include <TimerOne.h>
 
 #define L1 1 //1
 #define L2 2 //2
@@ -30,7 +30,7 @@ void setup() {
   pinMode(L2, OUTPUT);
   pinMode(L3, OUTPUT);
   pinMode(L4, OUTPUT);
-  pintMode(LS, OUTPUT);
+  pinMode(LS, OUTPUT);
   pinMode(B1, INPUT);
   pinMode(B2, INPUT);
   pinMode(B3, INPUT);
