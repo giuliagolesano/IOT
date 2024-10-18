@@ -1,12 +1,13 @@
 #include <avr/sleep.h>
 #include <TimerOne.h>
+//#include <LiquidCrystal.h>
 
 #define L1 11 //1
 #define L2 2 //2
 #define L3 3 //4
 #define L4 4 //8
 #define LS 9 
-#define POT 10
+#define POT A3
 #define B1 5
 #define B2 6
 #define B3 7
@@ -22,10 +23,17 @@ int score = 0;
 int T1 = 20000;
 unsigned long startTime;
 bool startGame = false;
+int level = 1;
+float F = 0.9;
+
+//LiquidCrystal lcd();
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+
+  //lcd.begin(16,2);
+
   pinMode(L1, OUTPUT);
   pinMode(L2, OUTPUT);
   pinMode(L3, OUTPUT);
@@ -35,40 +43,85 @@ void setup() {
   pinMode(B2, INPUT);
   pinMode(B3, INPUT);
   pinMode(B4, INPUT);
+  pinMode(POT, INPUT);
 
   //NON FUNZIONA IL RISVEGLIO DALLA SLEEP
   attachInterrupt(digitalPinToInterrupt(B1), wakeUp, RISING);
   startTime = millis();
+
+  /*
+  lcd.clear();
+  lcd.print("Welcome to GMB!");
+  lcd.setCursor(0, 1);  // Move to second line
+  lcd.print("Press B1 to Start");
+  */
 
   while(!startGame){
     digitalWrite(LS, HIGH);
     delay(500);
     digitalWrite(LS, LOW);
     delay(500);
-    Serial.println("B1 NOT PRESSED");
     if (digitalRead(B1) == HIGH) { 
-        startGame = true;
-	      target = random(0,16);
-        Serial.println("B1 PRESSED");
+      startGame = true;
+      target = random(0,16);
+
+      int potValue = analogRead(POT); 
+      level = map(potValue, 0, 1023, 1, 4);
+      delay(5000);
+      switch(level) {
+        case 1: F = 0.9; break;
+        case 2: F = 0.7; break;
+        case 3: F = 0.5; break;
+        case 4: F = 0.3; break;
+      }
+      /*
+      lcd.clear();
+      lcd.print("Level: ");
+      lcd.print(level);
+      lcd.setCursor(0, 1);
+      lcd.print("Go!");
+      delay(2000);
+      */
+
     } else {
       if (millis() - startTime >= 10000) {
-          Serial.println("SLEEPING");
           enterDeepSleep();
       }
     }
   }
-
- Timer1.initialize(1000000); 
- Timer1.attachInterrupt(ledManagement);
+  Timer1.initialize(1000000); 
+  Timer1.attachInterrupt(ledManagement);
 }
 
 void loop() {
-  Serial.println("...");
+  if(millis() - startTime >= T1 || won(sum())){
+    if(won(sum())){
+      /*
+      lcd.clear();
+      lcd.print("GOOD! Score: ");
+      lcd.print(score);
+      */
+      resetGame();
+    }else{
+      /*
+      lcd.clear();
+      lcd.print("Game Over!");
+      lcd.setCursor(0, 1); 
+      lcd.print("Score: ");
+      lcd.print(score);
+      delay(10000);
+      */
+      resetGame();
+    }
+  }
 }
 
 void ledManagement(){
-  Serial.println("GO!");
-  Serial.println(target);
+  /*
+  lcd.clear();
+  lcd.print("Target: ");
+  lcd.print(target);
+  */
   if(digitalRead(B1) == HIGH){
     if(pressed_1){
       digitalWrite(L1, LOW);
@@ -101,12 +154,6 @@ void ledManagement(){
     }
     pressed_8 = !pressed_8;
   }
-
-  Serial.println(digitalRead(B1));
-  Serial.println(digitalRead(B2));
-  Serial.println(digitalRead(B3));
-  Serial.println(digitalRead(B4));
-
 }
 
 int sum() {
@@ -121,6 +168,7 @@ int sum() {
 bool won(int cont) {
     if (cont == target) {
         score += 100;
+        T1 = T1 * F;
         return true;
     } else {
         return false;
@@ -129,7 +177,11 @@ bool won(int cont) {
 
 void resetGame() {
     resetButtons();
+    delay(500);
+    resetLeds();
     target = random(0,16);
+    startTime = millis();
+
 }
 
 void resetButtons(){
@@ -139,29 +191,14 @@ void resetButtons(){
   pressed_8 = false;
 }
 
-void wakeUp(){}
-
-void initialState(){
-    /*
-    lcd.clear();
-    lcd.print("Welcome to GBM!");
-    lcd.print("Press B1 to Start");
-    */
-    digitalWrite(LS, HIGH);
-    delay(500);
-    digitalWrite(LS, LOW);
-    delay(500);
-
-    if (digitalRead(B1) == HIGH) { 
-        startGame = true;
-	      target = random(0,16);
-        return;
-    } else {
-        if (millis() - startTime >= 10000) {
-            enterDeepSleep();
-        }
-    }
+void resetLeds(){
+  digitalWrite(L1, LOW);
+  digitalWrite(L2, LOW);
+  digitalWrite(L3, LOW);
+  digitalWrite(L4, LOW);
 }
+
+void wakeUp(){}
 
 void enterDeepSleep() {
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
