@@ -1,27 +1,36 @@
 #include <avr/sleep.h>
 #include <TimerOne.h>
+#include <EnableInterrupt.h>
+//#include <LiquidCrystal.h>
 
-#define L1 1 //1
-#define L2 2 //2
-#define L3 3 //4
-#define L4 4 //8
-#define LS 9 
-#define POT 10
-#define B1 5
-#define B2 6
-#define B3 7
-#define B4 8
+#define L4 11 //binary value 1
+#define L3 2 //binary value 2
+#define L2 3 //binary value 4
+#define L1 4 //binary value 8
+#define LS 9 //red led that pulse in the initial and lost state
+#define POT A3 //potentiometer for the level
+#define B4 5 //button for the binary value 1
+#define B3 6 //button for the binary value 2
+#define B2 7 //button for the binary value 4
+#define B1 8 //button for the binary value 8
+
+//variables that keep track of the LEDs on to facilitate the sum
+bool pressed_1 = false; 
+bool pressed_2 = false;
+bool pressed_4 = false;
+bool pressed_8 = false;
+
+int target;
+int score = 0;
+int T1 = 20000;
+unsigned long startTime;
+bool startGame = false;
+int level = 1;
+float F = 0.9;
+bool stopTheGame = false;
+bool oneSleep = false;
+
 //LiquidCrystal lcd();
-
-int pressed_1 = 0; //off
-int pressed_2 = 0; //off
-int pressed_4 = 0; //off
-int pressed_8 = 0; //off
-int start = 0;
-int status = 0; //1 is a victory, 0 is a lose.
-int scores = 0;
-int time = 15000;
-int f;
 
 void setup() {
   // put your setup code here, to run once:
@@ -36,151 +45,170 @@ void setup() {
   pinMode(B3, INPUT);
   pinMode(B4, INPUT);
   pinMode(POT, INPUT);
-  int target = number();
-  //lcd.begin(16,2);
-  Timer1.initialize(1000000);
-  Timer1.attachInterrupt(level);
+  enableInterrupt(B1, wakeUp, RISING);
+  startTime = millis();
+  /*
+  lcd.begin(16,2);
+  lcd.clear();
+  lcd.print("Welcome to GMB!");
+  lcd.setCursor(0, 1);  // Move to second line
+  lcd.print("Press B1 to Start");
+  */
+  Timer1.initialize(1000000); 
+  Timer1.attachInterrupt(ledManagement);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  /*
-  int cont = 0;
-  int t = 0;
-  do{
-    initialState();
-    cont = cont + 1000;
-    if(cont<10000){ //INVECE DI CONT USIAMO UN TIMER DELLA LIBRERIA !!
-      while(digitalRead(B1) == LOW){
+  //the initialization state is identified by the false startgame variable
+  //until it is possible to start rounds
+  while(startGame == false){
+    digitalWrite(LS, HIGH);
+    delay(500);
+    digitalWrite(LS, LOW);
+    delay(500);
+    //after pressing b1 you can start the game then all variables are set
+    //startGame became true
+    if (digitalRead(B1) == HIGH) { 
+      startGame = true;
+      startTime = millis();
+      target = random(0,16);
+      Serial.println("Target: ");
+      Serial.println(target);
+      int potValue = analogRead(POT); 
+      level = map(potValue, 0, 1023, 1, 4);
+      delay(2000);
+      switch(level) {
+        case 1: F = 0.9; break;
+        case 2: F = 0.7; break;
+        case 3: F = 0.5; break;
+        case 4: F = 0.3; break;
+      }
+      delay(1000);
+      /*
+      lcd.clear();
+      lcd.print("Level: ");
+      lcd.print(level);
+      lcd.setCursor(0, 1);
+      lcd.print("Go!");
+      delay(2000);
+      */
+    } else {
+      //onesleep represents whether or not sleep has already occurred, 
+      //which, according to the specifications, occurs only once
+      //millis() - startTime represents the time since the start of the programme
+      if (millis() - startTime >= 10000 && oneSleep == false) {
+        oneSleep = true;
+        Serial.flush();
+        delay(1000);
         set_sleep_mode(SLEEP_MODE_PWR_DOWN);
         sleep_enable();
         sleep_mode();
+        sleep_disable();
+        //set the value of startGame to false to be sure that it falls into the while and starts fading LS again, 
+        //also sure that it will not go into sleep because onesleep is set to true
+        startGame = false;
       }
-      start = 1
-      sleep_disable();
     }
-  }while(digitalRead(B1) == LOW || start == 0);
-
-  //lcd.print("Go!");
-  scores = 0;
-  //lcd.print(target);
-  while(t < times){ //INVECE DI T USIAMO UN TIMER DELLA LIBRERIA!
-    ledmanagement();
-  }
-  if(sum() == targer){
-    status = 1;
-  }else{
-    status = 0;
-  }
-  message();
-  */
-}
-
-//COME SI FA A FERMARE IL GIOCO?
-void message(){
-  if(status){
-    scores = scores +  100;
-    //lcd.print("GOOOD! Score: "+ scores);
-    time = time - f;
-  }else{
-    digitalWrite(LS, HIGH);
     delay(1000);
-    digitalWrite(LS, LOW);
-    //lcd.print("Game Over - Final Scores" + scores);
-    delay(10000);
+  }
+
+  //once lost, the possibility to make new rounds is blocked by stopTheGame variable, 
+  //if it is set to true, no more allows to establish any result
+  if(stopTheGame == false){
+    if(won(sum())){
+      /*
+      lcd.clear();
+      lcd.print("GOOD! Score: ");
+      lcd.print(score);
+      */
+      Serial.println("GOOD, SCORE: ");
+      Serial.println(score);
+      resetButtons();
+      delay(500);
+      resetLeds();
+      target = random(0,16);
+      Serial.println("Target: ");
+      Serial.println(target);
+      startTime = millis();
+      Serial.println("you have second: ");
+      Serial.println(T1);
+    }else if(millis() - startTime >= T1 ){
+      digitalWrite(LS, HIGH);
+      delay(1000);
+      digitalWrite(LS, LOW);
+      /*
+      lcd.clear();
+      lcd.print("Game Over!");
+      lcd.setCursor(0, 1); 
+      lcd.print("Score: ");
+      lcd.print(score);
+      delay(10000);
+      */
+      Serial.println("time over! ");
+      stopTheGame = true;
+      resetButtons();
+    }
   }
 }
 
-//function to randomically choose a number between 0 and 15
-int number(){
-  return random(0, 15);
-}
-
-//funtion to manage the switching the LEDs on or off
 void ledManagement(){
-    if(digitalRead(B1) == HIGH){
-    if(pressed_1){
-      digitalWrite(L1, LOW);
-      pressed_1 = 0;
-    }else{
-      digitalWrite(L1, HIGH);
-      pressed_1 = 1;
-    }
+  /*
+  lcd.clear();
+  lcd.print("Target: ");
+  lcd.print(target);
+  */
+  if (digitalRead(B1) == HIGH && startGame) {
+      digitalWrite(L1, pressed_8 ? LOW : HIGH);
+      pressed_8 = !pressed_8;
   }
-  if(digitalRead(B2) == HIGH){
-    if(pressed_2){
-      digitalWrite(L2, LOW);
-      pressed_2 = 0;
-    }else{
-      digitalWrite(L2, HIGH);
-      pressed_2 = 1;
-    }
+  
+  if (digitalRead(B2) == HIGH) {
+      digitalWrite(L2, pressed_4 ? LOW : HIGH);
+      pressed_4 = !pressed_4;
   }
-    if(digitalRead(B3) == HIGH){
-    if(pressed_4){
-      digitalWrite(L3, LOW);
-      pressed_4 = 0;
-    }else{
-      digitalWrite(L3, HIGH);
-      pressed_4 = 1;
-    }
+
+  if (digitalRead(B3) == HIGH) {
+      digitalWrite(L3, pressed_2 ? LOW : HIGH);
+      pressed_2 = !pressed_2;
   }
-    if(digitalRead(B4) == HIGH){
-    if(pressed_8){
-      digitalWrite(L4, LOW);
-      pressed_8 = 0;
-    }else{
-      digitalWrite(L4, HIGH);
-      pressed_8 = 1;
-    }
+
+  if (digitalRead(B4) == HIGH) {
+      digitalWrite(L4, pressed_1 ? LOW : HIGH);
+      pressed_1 = !pressed_1;
   }
 }
 
-int sum(){
+int sum() {
   int cont = 0;
-  if(pressed_1){
-    cont = cont + 1;
-  }
-  if(pressed_2){
-    cont = cont + 2;
-  }
-  if(pressed_4){
-    cont = cont + 4;
-  }
-  if(pressed_8){
-    cont = cont + 8;
-  }
+  if (pressed_1) cont += 1;
+  if (pressed_2) cont += 2;
+  if (pressed_4) cont += 4;
+  if (pressed_8) cont += 8;
   return cont;
 }
 
-void initialstate(){
-  //lcd.print("Welcome to GMB! Press B1 to Start");
-  digitalWrite(LS, HIGH);
-  delay(500);
-  digitalWrite(LS, LOW);
-  delaY(500);
-}
-
-void level(){
-  //SISTEMARE I CASE IN BASE A QUALI SONO I VALORI DEL POTENZIOMETRO, VEDERE STAMPA
-  //QUESTA COSA VA FATTA IN UN LOOP?
-  int pot_level = analogRead(POT);
-  int current;
-  if (pot_level != current){
-    current = pot_level;
-    int intensity = map(current, 0, 1023, 0, 255);
-    Serial.println(current);
-    switch(pot_level){
-      case 1: f=250;
-        break;
-      case 2: f=500;
-        break;
-      case 3: f=750;
-        break;
-      case 4: f=1000;
-        break;
-      default: f=250;
-        break;
-    }
+bool won(int cont) {
+  if (cont == target) {
+    score += 100;
+    T1 = T1 * F;
+    return true;
+  } else {
+    return false;
   }
 }
+
+void resetButtons(){
+  pressed_1 = false;
+  pressed_2 = false;
+  pressed_4 = false;
+  pressed_8 = false;
+}
+
+void resetLeds(){
+  digitalWrite(L1, LOW);
+  digitalWrite(L2, LOW);
+  digitalWrite(L3, LOW);
+  digitalWrite(L4, LOW);
+}
+
+void wakeUp() {}

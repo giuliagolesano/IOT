@@ -133,6 +133,9 @@ void loop() {
       Serial.println("you have second: ");
       Serial.println(T1);
     }else if(millis() - startTime >= T1 ){
+      digitalWrite(LS, HIGH);
+      delay(1000);
+      digitalWrite(LS, LOW);
       /*
       lcd.clear();
       lcd.print("Game Over!");
