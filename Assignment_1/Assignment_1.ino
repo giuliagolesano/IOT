@@ -1,7 +1,7 @@
 #include <avr/sleep.h>
 #include <TimerOne.h>
 #include <EnableInterrupt.h>
-//#include <LiquidCrystal.h>
+#include <LiquidCrystal.h>
 
 #define L4 11 //binary value 1
 #define L3 2 //binary value 2
