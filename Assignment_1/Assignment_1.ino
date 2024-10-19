@@ -30,7 +30,7 @@ float F = 0.9;
 bool stopTheGame = false;
 bool oneSleep = false;
 
-//LiquidCrystal lcd();
+LiquidCrystal lcd();
 
 void setup() {
   // put your setup code here, to run once:
@@ -47,13 +47,11 @@ void setup() {
   pinMode(POT, INPUT);
   enableInterrupt(B1, wakeUp, RISING);
   startTime = millis();
-  /*
   lcd.begin(16,2);
   lcd.clear();
   lcd.print("Welcome to GMB!");
-  lcd.setCursor(0, 1);  // Move to second line
+  lcd.setCursor(0, 1);
   lcd.print("Press B1 to Start");
-  */
   Timer1.initialize(1000000); 
   Timer1.attachInterrupt(ledManagement);
 }
@@ -72,8 +70,6 @@ void loop() {
       startGame = true;
       startTime = millis();
       target = random(0,16);
-      Serial.println("Target: ");
-      Serial.println(target);
       int potValue = analogRead(POT); 
       level = map(potValue, 0, 1023, 1, 4);
       delay(2000);
@@ -83,15 +79,10 @@ void loop() {
         case 3: F = 0.5; break;
         case 4: F = 0.3; break;
       }
-      delay(1000);
-      /*
       lcd.clear();
-      lcd.print("Level: ");
-      lcd.print(level);
       lcd.setCursor(0, 1);
       lcd.print("Go!");
       delay(2000);
-      */
     } else {
       //onesleep represents whether or not sleep has already occurred, 
       //which, according to the specifications, occurs only once
@@ -116,35 +107,24 @@ void loop() {
   //if it is set to true, no more allows to establish any result
   if(stopTheGame == false){
     if(won(sum())){
-      /*
       lcd.clear();
       lcd.print("GOOD! Score: ");
       lcd.print(score);
-      */
-      Serial.println("GOOD, SCORE: ");
-      Serial.println(score);
       resetButtons();
       delay(500);
       resetLeds();
       target = random(0,16);
-      Serial.println("Target: ");
-      Serial.println(target);
       startTime = millis();
-      Serial.println("you have second: ");
-      Serial.println(T1);
     }else if(millis() - startTime >= T1 ){
       digitalWrite(LS, HIGH);
       delay(1000);
       digitalWrite(LS, LOW);
-      /*
       lcd.clear();
       lcd.print("Game Over!");
       lcd.setCursor(0, 1); 
       lcd.print("Score: ");
       lcd.print(score);
       delay(10000);
-      */
-      Serial.println("time over! ");
       stopTheGame = true;
       resetButtons();
     }
@@ -152,26 +132,20 @@ void loop() {
 }
 
 void ledManagement(){
-  /*
   lcd.clear();
-  lcd.print("Target: ");
   lcd.print(target);
-  */
   if (digitalRead(B1) == HIGH && startGame) {
       digitalWrite(L1, pressed_8 ? LOW : HIGH);
       pressed_8 = !pressed_8;
   }
-  
   if (digitalRead(B2) == HIGH) {
       digitalWrite(L2, pressed_4 ? LOW : HIGH);
       pressed_4 = !pressed_4;
   }
-
   if (digitalRead(B3) == HIGH) {
       digitalWrite(L3, pressed_2 ? LOW : HIGH);
       pressed_2 = !pressed_2;
   }
-
   if (digitalRead(B4) == HIGH) {
       digitalWrite(L4, pressed_1 ? LOW : HIGH);
       pressed_1 = !pressed_1;
