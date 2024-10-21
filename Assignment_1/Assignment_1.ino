@@ -1,7 +1,7 @@
 #include <avr/sleep.h>
 #include <TimerOne.h>
 #include <EnableInterrupt.h>
-#include <LiquidCrystal.h>
+#include <LiquidCrystal_I2C.h>
 
 #define L4 11 //binary value 1
 #define L3 2 //binary value 2
@@ -30,7 +30,7 @@ float F = 0.9;
 bool stopTheGame = false;
 bool oneSleep = false;
 
-LiquidCrystal lcd();
+LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27,20,4);
 
 void setup() {
   // put your setup code here, to run once:
@@ -47,8 +47,8 @@ void setup() {
   pinMode(POT, INPUT);
   enableInterrupt(B1, wakeUp, RISING);
   startTime = millis();
-  lcd.begin(16,2);
-  lcd.clear();
+  lcd.init();
+  lcd.backlight();
   lcd.print("Welcome to GMB!");
   lcd.setCursor(0, 1);
   lcd.print("Press B1 to Start");
