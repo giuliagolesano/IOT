@@ -20,6 +20,8 @@ bool pressed_2 = false;
 bool pressed_4 = false;
 bool pressed_8 = false;
 
+int fadeAmount;
+int currIntensity;
 int target;
 int score = 0;
 int T1 = 20000;
@@ -49,10 +51,8 @@ void setup() {
   startTime = millis();
   lcd.init();
   lcd.backlight();
-  lcd.print("Welcome to GMB!");
-  lcd.setCursor(0, 1);
-  lcd.print("Press B1 to Start");
-  Timer1.initialize(1000000); 
+  lcd.begin(20,4);
+  Timer1.initialize(1000000);
   Timer1.attachInterrupt(ledManagement);
 }
 
@@ -60,16 +60,41 @@ void loop() {
   //the initialization state is identified by the false startgame variable
   //until it is possible to start rounds
   while(startGame == false){
+
+    /*
+    analogWrite(LS, currIntensity);   
+    currIntensity = currIntensity + fadeAmount;
+    if (currIntensity == 0 || currIntensity == 255) {
+      fadeAmount = -fadeAmount ; 
+    }     
+    delay(15);  */
     digitalWrite(LS, HIGH);
     delay(500);
     digitalWrite(LS, LOW);
     delay(500);
+
+    lcd.backlight();
+    lcd.setCursor(0, 0);
+    lcd.print("Welcome to GMB!");
+    lcd.setCursor(0, 1);
+    lcd.print("Press B1 to Start");
+
     //after pressing b1 you can start the game then all variables are set
     //startGame became true
     if (digitalRead(B1) == HIGH) { 
+
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Go!");
+      delay(1000);
+
       startGame = true;
       startTime = millis();
       target = random(0,16);
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(target);
+
       int potValue = analogRead(POT); 
       level = map(potValue, 0, 1023, 1, 4);
       delay(2000);
@@ -79,15 +104,13 @@ void loop() {
         case 3: F = 0.5; break;
         case 4: F = 0.3; break;
       }
-      lcd.clear();
-      lcd.setCursor(0, 1);
-      lcd.print("Go!");
-      delay(2000);
     } else {
       //onesleep represents whether or not sleep has already occurred, 
       //which, according to the specifications, occurs only once
       //millis() - startTime represents the time since the start of the programme
       if (millis() - startTime >= 10000 && oneSleep == false) {
+        lcd.clear();
+        lcd.noBacklight();
         oneSleep = true;
         Serial.flush();
         delay(1000);
@@ -107,24 +130,38 @@ void loop() {
   //if it is set to true, no more allows to establish any result
   if(stopTheGame == false){
     if(won(sum())){
+
       lcd.clear();
+      lcd.setCursor(0, 0);
       lcd.print("GOOD! Score: ");
       lcd.print(score);
+
       resetButtons();
       delay(500);
       resetLeds();
       target = random(0,16);
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(target);
+
       startTime = millis();
     }else if(millis() - startTime >= T1 ){
       digitalWrite(LS, HIGH);
       delay(1000);
       digitalWrite(LS, LOW);
+      resetLeds();
+
+
       lcd.clear();
+      lcd.setCursor(0, 0);
       lcd.print("Game Over!");
       lcd.setCursor(0, 1); 
       lcd.print("Score: ");
       lcd.print(score);
-      delay(10000);
+      delay(5000);
+      lcd.clear();
+      lcd.noBacklight();
+
       stopTheGame = true;
       resetButtons();
     }
@@ -132,8 +169,6 @@ void loop() {
 }
 
 void ledManagement(){
-  lcd.clear();
-  lcd.print(target);
   if (digitalRead(B1) == HIGH && startGame) {
       digitalWrite(L1, pressed_8 ? LOW : HIGH);
       pressed_8 = !pressed_8;
