@@ -191,6 +191,17 @@ void loop() {
 
     startGame = false;
     startTime = millis();
+    score = 0;
+    T1 = 20000;
+    int potValue = analogRead(POT); 
+    level = map(potValue, 0, 1023, 1, 4);
+
+    switch(level) {
+      case 1: F = 0.9; break;
+      case 2: F = 0.7; break;
+      case 3: F = 0.5; break;
+      case 4: F = 0.3; break;
+    }
   }
 }
 
@@ -198,24 +209,24 @@ void loop() {
 //for the composition of the number in track
 void ledManagement(){
   unsigned long currentTime = millis();
-  if (digitalRead(B1) == HIGH && (currentTime - lastPressB1 > debounceDelay)) {
+  if (digitalRead(B1) == HIGH && (currentTime - lastPressB1 > debounceDelay) && startGame) {
     lastPressB1 = currentTime;
     pressed_8 = !pressed_8;
     digitalWrite(L1, pressed_8 ? HIGH : LOW);
   }
-  if (digitalRead(B2) == HIGH && (currentTime - lastPressB2 > debounceDelay)) {
+  if (digitalRead(B2) == HIGH && (currentTime - lastPressB2 > debounceDelay) && startGame) {
     lastPressB2 = currentTime;
     pressed_4 = !pressed_4;
     digitalWrite(L2, pressed_4 ? HIGH : LOW);
   }
-  if (digitalRead(B3) == HIGH && (currentTime - lastPressB3 > debounceDelay)) {
+  if (digitalRead(B3) == HIGH && (currentTime - lastPressB3 > debounceDelay) && startGame) {
     lastPressB3 = currentTime;
     pressed_2 = !pressed_2;
     digitalWrite(L3, pressed_2 ? HIGH : LOW);
   }
-  if (digitalRead(B4) == HIGH && (currentTime - lastPressB4 > debounceDelay)) {
+  if (digitalRead(B4) == HIGH && (currentTime - lastPressB4 > debounceDelay) && startGame) {
     lastPressB4 = currentTime;
-    pressed_1 = !pressed_1;ì
+    pressed_1 = !pressed_1;
     digitalWrite(L4, pressed_1 ? HIGH : LOW);
   }
 }
