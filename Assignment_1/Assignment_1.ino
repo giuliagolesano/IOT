@@ -20,8 +20,10 @@ bool pressed_2 = false;
 bool pressed_4 = false;
 bool pressed_8 = false;
 
-int fadeAmount;
-int currIntensity;
+int fadeAmount = 1; // Il cambiamento dell'intensità ad ogni ciclo
+int currIntensity = 100; // Livello corrente di intensità (0-255)
+bool fadingUp = true;  // Per controllare la direzione del fading
+
 int target;
 int score = 0;
 int T1 = 20000;
@@ -49,6 +51,9 @@ void setup() {
   pinMode(POT, INPUT);
   enableInterrupt(B1, wakeUp, RISING);
   startTime = millis();
+  lcd.init();
+  lcd.backlight();
+  lcd.begin(20,4);
   Timer1.initialize(1000000);
   Timer1.attachInterrupt(ledManagement);
 }
@@ -58,26 +63,40 @@ void loop() {
   //until it is possible to start rounds
   while(startGame == false){
 
-    /*
-    analogWrite(LS, currIntensity);   
-    currIntensity = currIntensity + fadeAmount;
-    if (currIntensity == 0 || currIntensity == 255) {
-      fadeAmount = -fadeAmount ; 
-    }     
-    delay(15);  */
-    digitalWrite(LS, HIGH);
-    delay(500);
-    digitalWrite(LS, LOW);
-    delay(500);
+  //Fading del LED (LS)
+    analogWrite(LS, currIntensity);
 
-    lcd.init();
-    lcd.backlight();
+    // Cambia l'intensità
+    if (fadingUp) {
+      currIntensity += fadeAmount;
+      if (currIntensity >= 255) {
+        fadingUp = false;
+        currIntensity = 255;
+      }
+    } else {
+      currIntensity -= fadeAmount;
+      if (currIntensity <= 0) {
+        fadingUp = true;
+        currIntensity = 0;
+      }
+    }
+
+    // Piccola pausa per rendere visibile il fading
+    delay(30);
+
     lcd.begin(20,4);
     lcd.backlight();
     lcd.setCursor(0, 0);
     lcd.print("Welcome to GMB!");
     lcd.setCursor(0, 1);
     lcd.print("Press B1 to Start");
+
+    /*
+    digitalWrite(LS, HIGH);
+    delay(500);
+    digitalWrite(LS, LOW);
+    delay(500);*/
+
 
     //after pressing b1 you can start the game then all variables are set
     //startGame became true
@@ -105,30 +124,23 @@ void loop() {
         case 4: F = 0.3; break;
       }
     } else {
-      //onesleep represents whether or not sleep has already occurred, 
-      //which, according to the specifications, occurs only once
-      //millis() - startTime represents the time since the start of the programme
+
       if (millis() - startTime >= 10000) {
         lcd.clear();
         lcd.noBacklight();
-        oneSleep = true;
         Serial.flush();
-        delay(1000);
         set_sleep_mode(SLEEP_MODE_PWR_DOWN);
         sleep_enable();
         sleep_mode();
         sleep_disable();
         //set the value of startGame to false to be sure that it falls into the while and starts fading LS again, 
-        //also sure that it will not go into sleep because onesleep is set to true
         startGame = false;
         startTime = millis();
       }
     }
-    delay(1000);
   }
 
   if(won(sum())){
-
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("GOOD! Score: ");
@@ -137,6 +149,7 @@ void loop() {
     resetButtons();
     delay(500);
     resetLeds();
+
     target = random(0,16);
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -149,23 +162,20 @@ void loop() {
     digitalWrite(LS, LOW);
     resetLeds();
 
-
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Game Over!");
     lcd.setCursor(0, 1); 
     lcd.print("Score: ");
     lcd.print(score);
-    delay(5000);
+    delay(1000);
     lcd.clear();
-    lcd.noBacklight();
+    delay(5000);
 
-    delay(2000);
     startGame = false;
     startTime = millis();
     resetButtons();
   }
-
 }
 
 void ledManagement(){
