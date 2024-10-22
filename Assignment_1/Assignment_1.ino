@@ -20,6 +20,12 @@ bool pressed_2 = false;
 bool pressed_4 = false;
 bool pressed_8 = false;
 
+// Time tracking for debouncing (stores last time each button was pressed)
+unsigned long lastPressB1 = 0;
+unsigned long lastPressB2 = 0;
+unsigned long lastPressB3 = 0;
+unsigned long lastPressB4 = 0;
+
 //variables to manage the led fading LS in the initial state
 int fadeAmount = 1;
 int currIntensity = 100; 
@@ -32,6 +38,7 @@ int level = 1;
 float F = 0.9;
 
 unsigned long startTime;
+const unsigned long debounceDelay = 50; // Debounce delay (time in milliseconds to wait before accepting a new press)
 
 bool stopTheGame = false;
 bool startGame = false;
@@ -190,21 +197,26 @@ void loop() {
 //function that manages the on and off of the led by means of the appropriate buttons, 
 //for the composition of the number in track
 void ledManagement(){
-  if (digitalRead(B1) == HIGH && startGame) {
-      digitalWrite(L1, pressed_8 ? LOW : HIGH);
-      pressed_8 = !pressed_8;
+  unsigned long currentTime = millis();
+  if (digitalRead(B1) == HIGH && (currentTime - lastPressB1 > debounceDelay)) {
+    lastPressB1 = currentTime;
+    pressed_8 = !pressed_8;
+    digitalWrite(L1, pressed_8 ? HIGH : LOW);
   }
-  if (digitalRead(B2) == HIGH) {
-      digitalWrite(L2, pressed_4 ? LOW : HIGH);
-      pressed_4 = !pressed_4;
+  if (digitalRead(B2) == HIGH && (currentTime - lastPressB2 > debounceDelay)) {
+    lastPressB2 = currentTime;
+    pressed_4 = !pressed_4;
+    digitalWrite(L2, pressed_4 ? HIGH : LOW);
   }
-  if (digitalRead(B3) == HIGH) {
-      digitalWrite(L3, pressed_2 ? LOW : HIGH);
-      pressed_2 = !pressed_2;
+  if (digitalRead(B3) == HIGH && (currentTime - lastPressB3 > debounceDelay)) {
+    lastPressB3 = currentTime;
+    pressed_2 = !pressed_2;
+    digitalWrite(L3, pressed_2 ? HIGH : LOW);
   }
-  if (digitalRead(B4) == HIGH) {
-      digitalWrite(L4, pressed_1 ? LOW : HIGH);
-      pressed_1 = !pressed_1;
+  if (digitalRead(B4) == HIGH && (currentTime - lastPressB4 > debounceDelay)) {
+    lastPressB4 = currentTime;
+    pressed_1 = !pressed_1;ì
+    digitalWrite(L4, pressed_1 ? HIGH : LOW);
   }
 }
 
