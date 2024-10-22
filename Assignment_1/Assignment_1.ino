@@ -20,24 +20,25 @@ bool pressed_2 = false;
 bool pressed_4 = false;
 bool pressed_8 = false;
 
-int fadeAmount = 1; // Il cambiamento dell'intensità ad ogni ciclo
-int currIntensity = 100; // Livello corrente di intensità (0-255)
-bool fadingUp = true;  // Per controllare la direzione del fading
+//variables to manage the led fading LS in the initial state
+int fadeAmount = 1;
+int currIntensity = 100; 
+bool fadingUp = true;
 
-int target;
+int target; //number to dial in each round
 int score = 0;
 int T1 = 20000;
-unsigned long startTime;
-bool startGame = false;
 int level = 1;
 float F = 0.9;
+
+unsigned long startTime;
+
 bool stopTheGame = false;
-bool oneSleep = false;
+bool startGame = false;
 
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27,20,4);
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(9600);
   pinMode(L1, OUTPUT);
   pinMode(L2, OUTPUT);
@@ -49,11 +50,18 @@ void setup() {
   pinMode(B3, INPUT);
   pinMode(B4, INPUT);
   pinMode(POT, INPUT);
+
   enableInterrupt(B1, wakeUp, RISING);
+  enableInterrupt(B2, wakeUp, RISING);
+  enableInterrupt(B3, wakeUp, RISING);
+  enableInterrupt(B4, wakeUp, RISING);
+
   startTime = millis();
+
   lcd.init();
   lcd.backlight();
   lcd.begin(20,4);
+
   Timer1.initialize(1000000);
   Timer1.attachInterrupt(ledManagement);
 }
@@ -62,11 +70,8 @@ void loop() {
   //the initialization state is identified by the false startgame variable
   //until it is possible to start rounds
   while(startGame == false){
-
-  //Fading del LED (LS)
+    //fading in and out
     analogWrite(LS, currIntensity);
-
-    // Cambia l'intensità
     if (fadingUp) {
       currIntensity += fadeAmount;
       if (currIntensity >= 255) {
@@ -81,9 +86,6 @@ void loop() {
       }
     }
 
-    // Piccola pausa per rendere visibile il fading
-    delay(30);
-
     lcd.begin(20,4);
     lcd.backlight();
     lcd.setCursor(0, 0);
@@ -91,48 +93,49 @@ void loop() {
     lcd.setCursor(0, 1);
     lcd.print("Press B1 to Start");
 
-    /*
-    digitalWrite(LS, HIGH);
-    delay(500);
-    digitalWrite(LS, LOW);
-    delay(500);*/
-
-
     //after pressing b1 you can start the game then all variables are set
     //startGame became true
     if (digitalRead(B1) == HIGH) { 
 
+      analogWrite(LS, 0); 
+
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Go!");
+
       delay(1000);
 
       startGame = true;
       startTime = millis();
       target = random(0,16);
+      
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print(target);
 
       int potValue = analogRead(POT); 
       level = map(potValue, 0, 1023, 1, 4);
-      delay(2000);
+
       switch(level) {
         case 1: F = 0.9; break;
         case 2: F = 0.7; break;
         case 3: F = 0.5; break;
         case 4: F = 0.3; break;
       }
-    } else {
 
+    } else {
+      //if 10 seconds pass without the B1 key is pressed arduino goes in deep sleeping
       if (millis() - startTime >= 10000) {
+
         lcd.clear();
         lcd.noBacklight();
+
         Serial.flush();
         set_sleep_mode(SLEEP_MODE_PWR_DOWN);
         sleep_enable();
         sleep_mode();
         sleep_disable();
+
         //set the value of startGame to false to be sure that it falls into the while and starts fading LS again, 
         startGame = false;
         startTime = millis();
@@ -140,44 +143,52 @@ void loop() {
     }
   }
 
+  //At each loop cycle we check whether the number was entered correctly or if the maximum time has passed
   if(won(sum())){
+
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("GOOD! Score: ");
     lcd.print(score);
 
+    //reset buttons and leds
     resetButtons();
     delay(500);
     resetLeds();
 
+    //re-set the variables for the next round and show the new target
     target = random(0,16);
+    startTime = millis();
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print(target);
 
-    startTime = millis();
   }else if(millis() - startTime >= T1 ){
+
     digitalWrite(LS, HIGH);
     delay(1000);
     digitalWrite(LS, LOW);
+
     resetLeds();
+    resetButtons();
 
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Game Over!");
-    lcd.setCursor(0, 1); 
-    lcd.print("Score: ");
+    lcd.setCursor(0, 1);
+    lcd.print("Final Score: ");
     lcd.print(score);
-    delay(1000);
+    delay(2000);
     lcd.clear();
-    delay(5000);
+    delay(10000);
 
     startGame = false;
     startTime = millis();
-    resetButtons();
   }
 }
 
+//function that manages the on and off of the led by means of the appropriate buttons, 
+//for the composition of the number in track
 void ledManagement(){
   if (digitalRead(B1) == HIGH && startGame) {
       digitalWrite(L1, pressed_8 ? LOW : HIGH);
@@ -197,6 +208,8 @@ void ledManagement(){
   }
 }
 
+//function to quickly calculate the value reached by variables that track the pressed buttons, 
+//modified only in the above function
 int sum() {
   int cont = 0;
   if (pressed_1) cont += 1;
@@ -206,6 +219,7 @@ int sum() {
   return cont;
 }
 
+//boolean function to determine whether or not the number is entered correctly
 bool won(int cont) {
   if (cont == target) {
     score += 100;
