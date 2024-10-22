@@ -49,9 +49,6 @@ void setup() {
   pinMode(POT, INPUT);
   enableInterrupt(B1, wakeUp, RISING);
   startTime = millis();
-  lcd.init();
-  lcd.backlight();
-  lcd.begin(20,4);
   Timer1.initialize(1000000);
   Timer1.attachInterrupt(ledManagement);
 }
@@ -73,6 +70,9 @@ void loop() {
     digitalWrite(LS, LOW);
     delay(500);
 
+    lcd.init();
+    lcd.backlight();
+    lcd.begin(20,4);
     lcd.backlight();
     lcd.setCursor(0, 0);
     lcd.print("Welcome to GMB!");
@@ -108,7 +108,7 @@ void loop() {
       //onesleep represents whether or not sleep has already occurred, 
       //which, according to the specifications, occurs only once
       //millis() - startTime represents the time since the start of the programme
-      if (millis() - startTime >= 10000 && oneSleep == false) {
+      if (millis() - startTime >= 10000) {
         lcd.clear();
         lcd.noBacklight();
         oneSleep = true;
@@ -121,51 +121,51 @@ void loop() {
         //set the value of startGame to false to be sure that it falls into the while and starts fading LS again, 
         //also sure that it will not go into sleep because onesleep is set to true
         startGame = false;
+        startTime = millis();
       }
     }
     delay(1000);
   }
 
-  //once lost, the possibility to make new rounds is blocked by stopTheGame variable, 
-  //if it is set to true, no more allows to establish any result
-  if(stopTheGame == false){
-    if(won(sum())){
+  if(won(sum())){
 
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("GOOD! Score: ");
-      lcd.print(score);
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("GOOD! Score: ");
+    lcd.print(score);
 
-      resetButtons();
-      delay(500);
-      resetLeds();
-      target = random(0,16);
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print(target);
+    resetButtons();
+    delay(500);
+    resetLeds();
+    target = random(0,16);
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(target);
 
-      startTime = millis();
-    }else if(millis() - startTime >= T1 ){
-      digitalWrite(LS, HIGH);
-      delay(1000);
-      digitalWrite(LS, LOW);
-      resetLeds();
+    startTime = millis();
+  }else if(millis() - startTime >= T1 ){
+    digitalWrite(LS, HIGH);
+    delay(1000);
+    digitalWrite(LS, LOW);
+    resetLeds();
 
 
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Game Over!");
-      lcd.setCursor(0, 1); 
-      lcd.print("Score: ");
-      lcd.print(score);
-      delay(5000);
-      lcd.clear();
-      lcd.noBacklight();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Game Over!");
+    lcd.setCursor(0, 1); 
+    lcd.print("Score: ");
+    lcd.print(score);
+    delay(5000);
+    lcd.clear();
+    lcd.noBacklight();
 
-      stopTheGame = true;
-      resetButtons();
-    }
+    delay(2000);
+    startGame = false;
+    startTime = millis();
+    resetButtons();
   }
+
 }
 
 void ledManagement(){
