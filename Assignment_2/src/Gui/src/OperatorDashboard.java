@@ -56,7 +56,7 @@ public class OperatorDashboard {
         tempValueLabel = new JLabel("0.00 °C");
 
         // Caricare l'immagine PNG
-        gifLabel = new JLabel(new ImageIcon("src/Gui/src/temp.png"));
+        gifLabel = new JLabel(new ImageIcon("temp.png"));
         gifLabel.setOpaque(true);
         gifLabel.setBackground(new Color(255, 248, 198));  // Giallo pastello
 
@@ -73,7 +73,7 @@ public class OperatorDashboard {
         wasteLevelProgress.setValue(0);
         wasteLevelProgress.setStringPainted(true);
 
-        wasteImageLabel = new JLabel(new ImageIcon("src/Gui/src/liquid.png"));
+        wasteImageLabel = new JLabel(new ImageIcon("liquid.png"));
         wasteImageLabel.setOpaque(true);
         wasteImageLabel.setBackground(new Color(255, 248, 198));  // Giallo pastello
 
